@@ -80,6 +80,46 @@
             animation: counterPulse 0.5s ease;
         }
 
+        .music-toggle {
+            position: fixed;
+            top: 30px;
+            left: 200px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            animation: slideInFromLeft 0.6s ease 0.1s backwards;
+            z-index: 100;
+        }
+
+        .music-toggle:hover {
+            background: rgba(255, 255, 255, 0.35);
+            transform: scale(1.1);
+        }
+
+        .music-toggle svg {
+            width: 24px;
+            height: 24px;
+        }
+
+        .music-toggle.playing svg {
+            animation: musicBounce 0.6s ease infinite;
+        }
+
+        @keyframes musicBounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-3px); }
+        }
+
         @keyframes slideInFromLeft {
             from {
                 opacity: 0;
@@ -332,10 +372,17 @@
                 font-size: 0.95em;
             }
 
-            .counter-number {
-                font-size: 1.4em;
+            .music-toggle {
+                top: 15px;
+                left: 100px;
+                width: 45px;
+                height: 45px;
             }
-        }
+
+            .music-toggle svg {
+                width: 20px;
+                height: 20px;
+            }
     </style>
 </head>
 <body>
@@ -343,6 +390,16 @@
         <div class="counter-label">כניסות לעמוד</div>
         <div class="counter-number" id="visitCount">0</div>
     </div>
+
+    <audio id="bgMusic" loop>
+        <source src="https://res.cloudinary.com/de8axdzuj/video/upload/v1760482097/vlogs-vlog-music-background-394970_rcu39j.mp3" type="audio/mpeg">
+    </audio>
+
+    <button id="musicToggle" class="music-toggle" title="הפעל/השתק מוזיקה">
+        <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 3v9.28c-.47-.46-1.12-.75-1.84-.75-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+        </svg>
+    </button>
 
     <div class="container">
         <div class="profile">
@@ -501,6 +558,32 @@
 
         // הפעלה כשהדף נטען
         document.addEventListener('DOMContentLoaded', initializeVisitCounter);
+
+        // קובץ הגדרות מוזיקה
+        const bgMusic = document.getElementById('bgMusic');
+        const musicToggle = document.getElementById('musicToggle');
+        let isPlaying = false;
+
+        musicToggle.addEventListener('click', function() {
+            if (isPlaying) {
+                bgMusic.pause();
+                musicToggle.classList.remove('playing');
+                isPlaying = false;
+            } else {
+                bgMusic.play().catch(err => console.log('Failed to play music:', err));
+                musicToggle.classList.add('playing');
+                isPlaying = true;
+            }
+        });
+
+        // ניסיון להפעיל מוזיקה באופן אוטומטי (דפדפנים מודרניים דורשים interaction)
+        document.addEventListener('click', function initAutoplay() {
+            if (!isPlaying) {
+                bgMusic.play().catch(err => console.log('Autoplay prevented'));
+                musicToggle.classList.add('playing');
+                isPlaying = true;
+            }
+        }, { once: true });
     </script>
 </body>
 </html>
