@@ -432,7 +432,7 @@
 
             request.onsuccess = function() {
                 const db = request.result;
-                incrementVisitCount(db);
+                checkAndIncrementVisit(db);
             };
 
             request.onupgradeneeded = function(event) {
@@ -443,16 +443,49 @@
             };
         }
 
-        function incrementVisitCount(db) {
+        function checkAndIncrementVisit(db) {
+            const transaction = db.transaction(['stats'], 'readonly');
+            const store = transaction.objectStore('stats');
+            const getRequest = store.get('lastVisitTime');
+
+            getRequest.onsuccess = function() {
+                const lastVisit = getRequest.result ? getRequest.result.time : null;
+                const now = new Date().getTime();
+                const oneHourMs = 60 * 60 * 1000; // שעה אחת
+
+                // אם זו הכניסה הראשונה או עברה שעה - ספור כניסה חדשה
+                if (!lastVisit || (now - lastVisit) > oneHourMs) {
+                    incrementVisitCount(db, now);
+                } else {
+                    // אחרת רק תציג את המספר הקיים
+                    displayCurrentVisitCount(db);
+                }
+            };
+        }
+
+        function incrementVisitCount(db, currentTime) {
             const transaction = db.transaction(['stats'], 'readwrite');
+            const store = transaction.objectStore('stats');
+            
+            // קבל את מספר הכניסות
+            const visitsRequest = store.get('visits');
+            visitsRequest.onsuccess = function() {
+                let visits = visitsRequest.result ? visitsRequest.result.count : 0;
+                visits++;
+
+                store.put({ count: visits }, 'visits');
+                store.put({ time: currentTime }, 'lastVisitTime');
+                updateVisitCountDisplay(visits);
+            };
+        }
+
+        function displayCurrentVisitCount(db) {
+            const transaction = db.transaction(['stats'], 'readonly');
             const store = transaction.objectStore('stats');
             const getRequest = store.get('visits');
 
             getRequest.onsuccess = function() {
-                let visits = getRequest.result ? getRequest.result.count : 0;
-                visits++;
-
-                store.put({ count: visits }, 'visits');
+                const visits = getRequest.result ? getRequest.result.count : 0;
                 updateVisitCountDisplay(visits);
             };
         }
