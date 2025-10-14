@@ -485,15 +485,10 @@
         // עדכון מונה הכניסות
         async function updateVisitCounter() {
             try {
-                const response = await fetch(GOOGLE_SCRIPT_URL, {
+                await fetch(GOOGLE_SCRIPT_URL, {
                     method: 'POST',
                     mode: 'no-cors'
                 });
-                
-                // קבלת מספר הכניסות
-                const countResponse = await fetch(GOOGLE_SCRIPT_URL);
-                const data = await countResponse.json();
-                updateVisitCountDisplay(data.count);
             } catch (err) {
                 console.log('Failed to update counter:', err);
             }
@@ -521,7 +516,7 @@
         }
 
         // טעינת מונה בעת טעינת הדף
-        document.addEventListener('DOMContentLoaded', async function() {
+        window.addEventListener('load', async function() {
             updateVisitCounter();
             const count = await getVisitCount();
             updateVisitCountDisplay(count);
@@ -532,18 +527,25 @@
         const musicToggle = document.getElementById('musicToggle');
         let isPlaying = false;
 
-        // הנחתת המוזיקה לרמה נמוכה יותר (50%)
-        bgMusic.volume = 0.5;
+        // הנחתת המוזיקה ל-30% (חצי מחצי)
+        bgMusic.volume = 0.3;
 
-        // הפעלת מוזיקה אוטומטית כשהדף נטען
-        window.addEventListener('load', function() {
-            bgMusic.play().catch(err => console.log('Autoplay prevented'));
-            musicToggle.classList.add('playing');
-            isPlaying = true;
+        // הפעלת מוזיקה מיד כשהעמוד נטען
+        bgMusic.play().catch(err => {
+            console.log('Autoplay prevented, waiting for user interaction');
+            // אם autoplay נחסם, נחכה ללחיצה
+            document.addEventListener('click', function playOnClick() {
+                bgMusic.play().catch(e => console.log('Still blocked'));
+                document.removeEventListener('click', playOnClick);
+            }, { once: true });
         });
 
+        musicToggle.classList.add('playing');
+        isPlaying = true;
+
         // לחץ על כפתור - הפעלה/השתקה
-        musicToggle.addEventListener('click', function() {
+        musicToggle.addEventListener('click', function(e) {
+            e.stopPropagation();
             if (isPlaying) {
                 bgMusic.pause();
                 musicToggle.classList.remove('playing');
