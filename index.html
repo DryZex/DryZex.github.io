@@ -48,6 +48,55 @@
             z-index: 1;
         }
 
+        .visit-counter {
+            position: fixed;
+            top: 30px;
+            left: 30px;
+            background: rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 15px;
+            padding: 15px 25px;
+            color: white;
+            font-size: 1.1em;
+            font-weight: bold;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            animation: slideInFromLeft 0.6s ease;
+            z-index: 100;
+        }
+
+        .counter-label {
+            font-size: 0.85em;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+
+        .counter-number {
+            font-size: 1.8em;
+            background: linear-gradient(45deg, #00d4ff, #0099ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: counterPulse 0.5s ease;
+        }
+
+        @keyframes slideInFromLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes counterPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
         .copyright {
             text-align: center;
             color: rgba(255, 255, 255, 0.9);
@@ -275,10 +324,26 @@
             .link-title {
                 font-size: 1.1em;
             }
+
+            .visit-counter {
+                top: 15px;
+                left: 15px;
+                padding: 12px 18px;
+                font-size: 0.95em;
+            }
+
+            .counter-number {
+                font-size: 1.4em;
+            }
         }
     </style>
 </head>
 <body>
+    <div class="visit-counter">
+        <div class="counter-label">כניסות לעמוד</div>
+        <div class="counter-number" id="visitCount">0</div>
+    </div>
+
     <div class="container">
         <div class="profile">
             <div class="profile-img">
@@ -355,5 +420,54 @@
             <p>© 2025 DryZex. All Rights Reserved.</p>
         </div>
     </div>
+
+    <script>
+        // יוזמת IndexedDB
+        function initializeVisitCounter() {
+            const request = indexedDB.open('DryZexDB', 1);
+
+            request.onerror = function() {
+                console.error('IndexedDB failed to open');
+            };
+
+            request.onsuccess = function() {
+                const db = request.result;
+                incrementVisitCount(db);
+            };
+
+            request.onupgradeneeded = function(event) {
+                const db = event.target.result;
+                if (!db.objectStoreNames.contains('stats')) {
+                    db.createObjectStore('stats');
+                }
+            };
+        }
+
+        function incrementVisitCount(db) {
+            const transaction = db.transaction(['stats'], 'readwrite');
+            const store = transaction.objectStore('stats');
+            const getRequest = store.get('visits');
+
+            getRequest.onsuccess = function() {
+                let visits = getRequest.result ? getRequest.result.count : 0;
+                visits++;
+
+                store.put({ count: visits }, 'visits');
+                updateVisitCountDisplay(visits);
+            };
+        }
+
+        function updateVisitCountDisplay(count) {
+            const counterElement = document.getElementById('visitCount');
+            counterElement.textContent = count;
+            counterElement.style.animation = 'none';
+            setTimeout(() => {
+                counterElement.style.animation = '';
+            }, 10);
+        }
+
+        // הפעלה כשהדף נטען
+        document.addEventListener('DOMContentLoaded', initializeVisitCounter);
+    </script>
 </body>
 </html>
